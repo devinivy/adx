@@ -89,6 +89,8 @@ import * as ComAtprotoSyncListRepos from './types/com/atproto/sync/listRepos'
 import * as ComAtprotoSyncNotifyOfUpdate from './types/com/atproto/sync/notifyOfUpdate'
 import * as ComAtprotoSyncRequestCrawl from './types/com/atproto/sync/requestCrawl'
 import * as ComAtprotoSyncSubscribeRepos from './types/com/atproto/sync/subscribeRepos'
+import * as ComAtprotoSyncSubscribeRevisions from './types/com/atproto/sync/subscribeRevisions'
+import * as ComAtprotoSyncSyncRepo from './types/com/atproto/sync/syncRepo'
 import * as ComAtprotoTempCheckSignupQueue from './types/com/atproto/temp/checkSignupQueue'
 import * as ComAtprotoTempFetchLabels from './types/com/atproto/temp/fetchLabels'
 import * as ComAtprotoTempRequestPhoneVerification from './types/com/atproto/temp/requestPhoneVerification'
@@ -1144,6 +1146,28 @@ export class ComAtprotoSyncNS {
   ) {
     const nsid = 'com.atproto.sync.subscribeRepos' // @ts-ignore
     return this._server.xrpc.streamMethod(nsid, cfg)
+  }
+
+  subscribeRevisions<AV extends StreamAuthVerifier>(
+    cfg: ConfigOf<
+      AV,
+      ComAtprotoSyncSubscribeRevisions.Handler<ExtractAuth<AV>>,
+      ComAtprotoSyncSubscribeRevisions.HandlerReqCtx<ExtractAuth<AV>>
+    >,
+  ) {
+    const nsid = 'com.atproto.sync.subscribeRevisions' // @ts-ignore
+    return this._server.xrpc.streamMethod(nsid, cfg)
+  }
+
+  syncRepo<AV extends AuthVerifier>(
+    cfg: ConfigOf<
+      AV,
+      ComAtprotoSyncSyncRepo.Handler<ExtractAuth<AV>>,
+      ComAtprotoSyncSyncRepo.HandlerReqCtx<ExtractAuth<AV>>
+    >,
+  ) {
+    const nsid = 'com.atproto.sync.syncRepo' // @ts-ignore
+    return this._server.xrpc.method(nsid, cfg)
   }
 }
 

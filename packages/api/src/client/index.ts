@@ -92,6 +92,8 @@ import * as ComAtprotoSyncListRepos from './types/com/atproto/sync/listRepos'
 import * as ComAtprotoSyncNotifyOfUpdate from './types/com/atproto/sync/notifyOfUpdate'
 import * as ComAtprotoSyncRequestCrawl from './types/com/atproto/sync/requestCrawl'
 import * as ComAtprotoSyncSubscribeRepos from './types/com/atproto/sync/subscribeRepos'
+import * as ComAtprotoSyncSubscribeRevisions from './types/com/atproto/sync/subscribeRevisions'
+import * as ComAtprotoSyncSyncRepo from './types/com/atproto/sync/syncRepo'
 import * as ComAtprotoTempCheckSignupQueue from './types/com/atproto/temp/checkSignupQueue'
 import * as ComAtprotoTempFetchLabels from './types/com/atproto/temp/fetchLabels'
 import * as ComAtprotoTempRequestPhoneVerification from './types/com/atproto/temp/requestPhoneVerification'
@@ -246,6 +248,8 @@ export * as ComAtprotoSyncListRepos from './types/com/atproto/sync/listRepos'
 export * as ComAtprotoSyncNotifyOfUpdate from './types/com/atproto/sync/notifyOfUpdate'
 export * as ComAtprotoSyncRequestCrawl from './types/com/atproto/sync/requestCrawl'
 export * as ComAtprotoSyncSubscribeRepos from './types/com/atproto/sync/subscribeRepos'
+export * as ComAtprotoSyncSubscribeRevisions from './types/com/atproto/sync/subscribeRevisions'
+export * as ComAtprotoSyncSyncRepo from './types/com/atproto/sync/syncRepo'
 export * as ComAtprotoTempCheckSignupQueue from './types/com/atproto/temp/checkSignupQueue'
 export * as ComAtprotoTempFetchLabels from './types/com/atproto/temp/fetchLabels'
 export * as ComAtprotoTempRequestPhoneVerification from './types/com/atproto/temp/requestPhoneVerification'
@@ -1343,6 +1347,17 @@ export class ComAtprotoSyncNS {
       .call('com.atproto.sync.requestCrawl', opts?.qp, data, opts)
       .catch((e) => {
         throw ComAtprotoSyncRequestCrawl.toKnownErr(e)
+      })
+  }
+
+  syncRepo(
+    params?: ComAtprotoSyncSyncRepo.QueryParams,
+    opts?: ComAtprotoSyncSyncRepo.CallOptions,
+  ): Promise<ComAtprotoSyncSyncRepo.Response> {
+    return this._service.xrpc
+      .call('com.atproto.sync.syncRepo', params, undefined, opts)
+      .catch((e) => {
+        throw ComAtprotoSyncSyncRepo.toKnownErr(e)
       })
   }
 }

@@ -4832,6 +4832,126 @@ export const schemaDict = {
       },
     },
   },
+  ComAtprotoSyncSubscribeRevisions: {
+    lexicon: 1,
+    id: 'com.atproto.sync.subscribeRevisions',
+    defs: {
+      main: {
+        type: 'subscription',
+        description:
+          'Stream of repo revisions and identity hints for all hosted repos.',
+        parameters: {
+          type: 'params',
+          properties: {
+            cursor: {
+              type: 'string',
+              description: 'The last seen seq to continue the subscription.',
+            },
+          },
+        },
+        message: {
+          schema: {
+            type: 'union',
+            refs: [
+              'lex:com.atproto.sync.subscribeRevisions#commit',
+              'lex:com.atproto.sync.subscribeRevisions#identity',
+            ],
+          },
+        },
+        errors: [],
+      },
+      commit: {
+        type: 'object',
+        description: 'Indicates an updated repository revision.',
+        required: ['did', 'rev', 'seq'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+            description: 'The did of the relevant repository.',
+          },
+          rev: {
+            type: 'string',
+            description: 'The revision of the relevant repository.',
+          },
+          seq: {
+            type: 'string',
+            description: 'The sequence tag of this message.',
+          },
+        },
+      },
+      identity: {
+        type: 'object',
+        description: 'Hints at an identity update for the repository.',
+        required: ['did', 'rev', 'seq'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+            description: 'The did of the relevant repository.',
+          },
+          rev: {
+            type: 'string',
+            description: 'The revision of the relevant repository.',
+          },
+          seq: {
+            type: 'string',
+            description: 'The sequence tag of this message.',
+          },
+        },
+      },
+    },
+  },
+  ComAtprotoSyncSyncRepo: {
+    lexicon: 1,
+    id: 'com.atproto.sync.syncRepo',
+    defs: {
+      main: {
+        type: 'query',
+        description: 'Sync repository updates since a given revision.',
+        parameters: {
+          type: 'params',
+          required: ['did'],
+          properties: {
+            did: {
+              type: 'string',
+              format: 'did',
+              description: 'The DID of the repo.',
+            },
+            since: {
+              type: 'string',
+              description: 'The revision from which to sync changes.',
+            },
+            collection: {
+              type: 'string',
+              format: 'nsid',
+              description: 'The NSID of the collection to sync.',
+            },
+          },
+        },
+        output: {
+          encoding: 'application/json',
+          schema: {
+            type: 'object',
+            required: ['path', 'cid', 'block'],
+            nullable: ['path', 'cid', 'block'],
+            properties: {
+              path: {
+                type: 'string',
+              },
+              cid: {
+                type: 'cid-link',
+              },
+              block: {
+                type: 'unknown',
+              },
+            },
+          },
+        },
+        errors: [],
+      },
+    },
+  },
   ComAtprotoTempCheckSignupQueue: {
     lexicon: 1,
     id: 'com.atproto.temp.checkSignupQueue',
@@ -8961,6 +9081,8 @@ export const ids = {
   ComAtprotoSyncNotifyOfUpdate: 'com.atproto.sync.notifyOfUpdate',
   ComAtprotoSyncRequestCrawl: 'com.atproto.sync.requestCrawl',
   ComAtprotoSyncSubscribeRepos: 'com.atproto.sync.subscribeRepos',
+  ComAtprotoSyncSubscribeRevisions: 'com.atproto.sync.subscribeRevisions',
+  ComAtprotoSyncSyncRepo: 'com.atproto.sync.syncRepo',
   ComAtprotoTempCheckSignupQueue: 'com.atproto.temp.checkSignupQueue',
   ComAtprotoTempFetchLabels: 'com.atproto.temp.fetchLabels',
   ComAtprotoTempRequestPhoneVerification:
