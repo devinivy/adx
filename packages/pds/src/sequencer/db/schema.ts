@@ -20,6 +20,14 @@ export interface RepoSeq {
 export type RepoSeqInsert = Insertable<RepoSeq>
 export type RepoSeqEntry = Selectable<RepoSeq>
 
+export interface Revision {
+  did: string
+  rev: string
+  seq: number
+  seqIdentity: number
+}
+
 export type SequencerDbSchema = {
   repo_seq: RepoSeq
+  revision: Revision
 }
