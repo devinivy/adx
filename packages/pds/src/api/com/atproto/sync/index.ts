@@ -6,6 +6,7 @@ import getLatestCommit from './getLatestCommit'
 import getRecord from './getRecord'
 import getRepo from './getRepo'
 import subscribeRepos from './subscribeRepos'
+import subscribeRevisions from './subscribeRevisions'
 import listBlobs from './listBlobs'
 import listRepos from './listRepos'
 import getCheckout from './deprecated/getCheckout'
@@ -18,6 +19,7 @@ export default function (server: Server, ctx: AppContext) {
   getRecord(server, ctx)
   getRepo(server, ctx)
   subscribeRepos(server, ctx)
+  subscribeRevisions(server, ctx)
   listBlobs(server, ctx)
   listRepos(server, ctx)
   getCheckout(server, ctx)

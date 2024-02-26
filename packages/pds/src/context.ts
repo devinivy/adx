@@ -25,6 +25,7 @@ import { DiskBlobStore } from './disk-blobstore'
 import { getRedisClient } from './redis'
 import { ActorStore, ActorStoreReader } from './actor-store'
 import { LocalViewer } from './read-after-write/viewer'
+import { Revisions } from './sequencer/revisions'
 
 export type AppContextOptions = {
   actorStore: ActorStore
@@ -40,6 +41,7 @@ export type AppContextOptions = {
   plcClient: plc.Client
   accountManager: AccountManager
   sequencer: Sequencer
+  revisions: Revisions
   backgroundQueue: BackgroundQueue
   redisScratch?: Redis
   crawlers: Crawlers
@@ -66,6 +68,7 @@ export class AppContext {
   public plcClient: plc.Client
   public accountManager: AccountManager
   public sequencer: Sequencer
+  public revisions: Revisions
   public backgroundQueue: BackgroundQueue
   public redisScratch?: Redis
   public crawlers: Crawlers
@@ -88,6 +91,7 @@ export class AppContext {
     this.plcClient = opts.plcClient
     this.accountManager = opts.accountManager
     this.sequencer = opts.sequencer
+    this.revisions = opts.revisions
     this.backgroundQueue = opts.backgroundQueue
     this.redisScratch = opts.redisScratch
     this.crawlers = opts.crawlers
@@ -165,6 +169,12 @@ export class AppContext {
       ? getRedisClient(cfg.redis.address, cfg.redis.password)
       : undefined
 
+    const revisions = new Revisions(
+      cfg.db.sequencerDbLoc,
+      cfg.db.disableWalAutoCheckpoint,
+      cfg.db.revisionsNotifyLoc,
+    )
+
     const appViewAgent = cfg.bskyAppView
       ? new AtpAgent({ service: cfg.bskyAppView.url })
       : undefined
@@ -236,6 +246,7 @@ export class AppContext {
       plcClient,
       accountManager,
       sequencer,
+      revisions,
       backgroundQueue,
       redisScratch,
       crawlers,

@@ -42,6 +42,7 @@ export default function (server: Server, ctx: AppContext) {
         account.handle ?? INVALID_HANDLE,
       )
       await ctx.sequencer.sequenceCommit(requester, commitData, [])
+      await ctx.revisions.commit({ did: requester, rev: commitData.rev })
     },
   })
 }

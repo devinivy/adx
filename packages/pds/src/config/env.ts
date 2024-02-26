@@ -17,6 +17,7 @@ export const readEnv = (): ServerEnvironment => {
     disableWalAutoCheckpoint: envBool('PDS_SQLITE_DISABLE_WAL_AUTO_CHECKPOINT'),
     accountDbLocation: envStr('PDS_ACCOUNT_DB_LOCATION'),
     sequencerDbLocation: envStr('PDS_SEQUENCER_DB_LOCATION'),
+    revisionsNotifyLocation: envStr('PDS_REVISIONS_NOTIFY_LOCATION'),
     didCacheDbLocation: envStr('PDS_DID_CACHE_DB_LOCATION'),
 
     // actor store
@@ -124,6 +125,7 @@ export type ServerEnvironment = {
   disableWalAutoCheckpoint?: boolean
   accountDbLocation?: string
   sequencerDbLocation?: string
+  revisionsNotifyLocation?: string
   didCacheDbLocation?: string
 
   // actor store

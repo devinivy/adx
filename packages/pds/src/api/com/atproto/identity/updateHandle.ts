@@ -58,6 +58,7 @@ export default function (server: Server, ctx: AppContext) {
       try {
         await ctx.sequencer.sequenceHandleUpdate(requester, handle)
         await ctx.sequencer.sequenceIdentityEvt(requester)
+        await ctx.revisions.identity({ did: requester })
       } catch (err) {
         httpLogger.error(
           { err, did: requester, handle },

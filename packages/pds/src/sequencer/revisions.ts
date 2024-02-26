@@ -7,12 +7,24 @@ export class Revisions {
   notify: Notify
 
   constructor(
-    notifyLocation: string,
     dbLocation: string,
     disableWalAutoCheckpoint = false,
+    notifyLocation: string,
   ) {
     this.db = getDb(dbLocation, disableWalAutoCheckpoint)
     this.notify = new Notify(notifyLocation)
+  }
+
+  async *latest(since?: { seq: number; did?: string }, signal?: AbortSignal) {
+    let cursor = since
+    do {
+      if (signal?.aborted) return
+      const page = await this.getPage(cursor)
+      for (const item of page) {
+        yield item
+      }
+      cursor = page.at(-1)
+    } while (cursor)
   }
 
   async getPage(since?: { seq: number; did?: string }) {

@@ -35,6 +35,8 @@ export const envToCfg = (env: ServerEnvironment): ServerConfig => {
   const dbCfg: ServerConfig['db'] = {
     accountDbLoc: env.accountDbLocation ?? dbLoc('account.sqlite'),
     sequencerDbLoc: env.sequencerDbLocation ?? dbLoc('sequencer.sqlite'),
+    revisionsNotifyLoc:
+      env.revisionsNotifyLocation ?? dbLoc('revisions.notify'),
     didCacheDbLoc: env.didCacheDbLocation ?? dbLoc('did_cache.sqlite'),
     disableWalAutoCheckpoint,
   }
@@ -285,6 +287,7 @@ export type ServiceConfig = {
 export type DatabaseConfig = {
   accountDbLoc: string
   sequencerDbLoc: string
+  revisionsNotifyLoc: string
   didCacheDbLoc: string
   disableWalAutoCheckpoint: boolean
 }
