@@ -15,30 +15,47 @@ export class Revisions {
     this.notify = new Notify(notifyLocation)
   }
 
-  async *latest(since?: { seq: number; did?: string }, signal?: AbortSignal) {
-    let cursor = since
+  async *latest(
+    params?: { seq?: number; did?: string; til?: number },
+    signal?: AbortSignal,
+  ) {
+    let cursor = params?.seq ? { seq: params.seq, did: params.did } : undefined
+    let epoch = params?.til ?? Date.now()
+    let epochPages = 0
     do {
-      if (signal?.aborted) return
-      const page = await this.getPage(cursor)
-      for (const item of page) {
-        yield item
-      }
-      cursor = page.at(-1)
-    } while (cursor)
+      epochPages = 0
+      do {
+        if (signal?.aborted) return
+        const page = await this.getPage({ ...cursor, til: epoch })
+        for (const { did, rev, seq, seqIdentity } of page) {
+          yield {
+            did,
+            rev,
+            seq,
+            identity: !cursor || seqIdentity >= cursor.seq,
+          }
+        }
+        epochPages++
+        cursor = page.at(-1)
+      } while (cursor)
+      cursor = { seq: epoch, did: undefined }
+      epoch = Date.now()
+    } while (epochPages > 1)
   }
 
-  async getPage(since?: { seq: number; did?: string }) {
+  async getPage(params: { seq?: number; did?: string; til: number }) {
     let qb = this.db.db
       .selectFrom('revision')
       .selectAll()
+      .where('seq', '<', params.til)
       .orderBy('seq', 'asc')
       .orderBy('did', 'asc')
       .limit(250)
-    if (since) {
-      if (since.did) {
-        qb = qb.where('seq', '>', since.seq).where('did', '>', since.did)
+    if (params.seq) {
+      if (params.did) {
+        qb = qb.where('seq', '>', params.seq).where('did', '>', params.did)
       } else {
-        qb = qb.where('seq', '>=', since.seq)
+        qb = qb.where('seq', '>=', params.seq)
       }
     }
     return await qb.execute()
