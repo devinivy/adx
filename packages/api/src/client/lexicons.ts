@@ -4851,54 +4851,43 @@ export const schemaDict = {
         },
         message: {
           schema: {
-            type: 'union',
-            refs: [
-              'lex:com.atproto.sync.subscribeRevisions#commit',
-              'lex:com.atproto.sync.subscribeRevisions#identity',
-            ],
+            type: 'object',
+            description:
+              'Indicates an change in repository revision, identity, or hosting status.',
+            required: ['seq', 'did', 'rev'],
+            properties: {
+              seq: {
+                type: 'string',
+                description: 'The sequence tag of this message.',
+              },
+              did: {
+                type: 'string',
+                format: 'did',
+                description: "The repository's DID.",
+              },
+              rev: {
+                type: 'string',
+                description: "The repository's latest revision.",
+              },
+              status: {
+                type: 'string',
+                description: "The repository's hosting status.",
+                knownValues: [
+                  'takendown',
+                  'suspended',
+                  'deleted',
+                  'deactivated',
+                ],
+              },
+              ident: {
+                type: 'string',
+                description:
+                  "A token that changes when the repository's underlying identity has been updated.",
+              },
+            },
           },
         },
         errors: [],
-      },
-      commit: {
-        type: 'object',
-        description: 'Indicates an updated repository revision.',
-        required: ['did', 'rev', 'seq'],
-        properties: {
-          did: {
-            type: 'string',
-            format: 'did',
-            description: 'The did of the relevant repository.',
-          },
-          rev: {
-            type: 'string',
-            description: 'The revision of the relevant repository.',
-          },
-          seq: {
-            type: 'string',
-            description: 'The sequence tag of this message.',
-          },
-        },
-      },
-      identity: {
-        type: 'object',
-        description: 'Hints at an identity update for the repository.',
-        required: ['did', 'rev', 'seq'],
-        properties: {
-          did: {
-            type: 'string',
-            format: 'did',
-            description: 'The did of the relevant repository.',
-          },
-          rev: {
-            type: 'string',
-            description: 'The revision of the relevant repository.',
-          },
-          seq: {
-            type: 'string',
-            description: 'The sequence tag of this message.',
-          },
-        },
       },
     },
   },
