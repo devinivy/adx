@@ -1,6 +1,8 @@
 import { Notify } from './notify'
 import { SequencerDb, getDb } from './db'
 import { excluded } from '../db'
+import { cidForCbor } from '@atproto/common'
+import { randomStr } from '@atproto/crypto'
 
 export class Revisions {
   db: SequencerDb
@@ -15,43 +17,29 @@ export class Revisions {
     this.notify = new Notify(notifyLocation)
   }
 
-  async *latest(
-    params?: { seq?: number; did?: string; til?: number },
-    signal?: AbortSignal,
-  ) {
-    let cursor = params?.seq ? { seq: params.seq, did: params.did } : undefined
-    let epoch = params?.til ?? Date.now()
-    let epochPages = 0
+  async *latest(params?: { seq: number; did?: string }, signal?: AbortSignal) {
+    let cursor = params && {
+      seq: params.seq,
+      did: params.did,
+    }
     do {
-      epochPages = 0
-      do {
-        if (signal?.aborted) return
-        const page = await this.getPage({ ...cursor, til: epoch })
-        for (const { did, rev, seq, seqIdentity } of page) {
-          yield {
-            did,
-            rev,
-            seq,
-            identity: !cursor || seqIdentity >= cursor.seq,
-          }
-        }
-        epochPages++
-        cursor = page.at(-1)
-      } while (cursor)
-      cursor = { seq: epoch, did: undefined }
-      epoch = Date.now()
-    } while (epochPages > 1)
+      if (signal?.aborted) return
+      const page = await this.getPage(cursor)
+      for (const item of page) {
+        yield item
+      }
+      cursor = page.at(-1)
+    } while (cursor)
   }
 
-  async getPage(params: { seq?: number; did?: string; til: number }) {
+  async getPage(params?: { seq: number; did?: string }) {
     let qb = this.db.db
       .selectFrom('revision')
       .selectAll()
-      .where('seq', '<', params.til)
       .orderBy('seq', 'asc')
       .orderBy('did', 'asc')
       .limit(250)
-    if (params.seq) {
+    if (params) {
       if (params.did) {
         qb = qb.where('seq', '>', params.seq).where('did', '>', params.did)
       } else {
@@ -61,13 +49,37 @@ export class Revisions {
     return await qb.execute()
   }
 
+  async init(info: {
+    did: string
+    rev: string
+    ident?: string
+    status: string | null
+  }) {
+    const { did, rev, ident = randomStr(8, 'base32'), status } = info
+    const seq = Date.now()
+    await this.db.executeWithRetry(
+      this.db.db
+        .insertInto('revision')
+        .values({ seq, did, rev, ident, status })
+        .onConflict((oc) =>
+          oc.column('did').doUpdateSet({
+            seq: excluded(this.db.db, 'seq'),
+            rev: excluded(this.db.db, 'rev'),
+            ident: excluded(this.db.db, 'ident'),
+            status: excluded(this.db.db, 'status'),
+          }),
+        ),
+    )
+    this.notify.update()
+  }
+
   async commit(info: { did: string; rev: string }) {
     const { did, rev } = info
     const seq = Date.now()
     await this.db.executeWithRetry(
       this.db.db
         .insertInto('revision')
-        .values({ did, rev, seq, seqIdentity: seq })
+        .values({ seq, did, rev })
         .onConflict((oc) =>
           oc.column('did').doUpdateSet({
             rev: excluded(this.db.db, 'rev'),
@@ -78,13 +90,26 @@ export class Revisions {
     this.notify.update()
   }
 
-  async identity(info: { did: string }) {
-    const { did } = info
+  // @TODO make identity required, perhaps some kind of truncated hash related to DID doc contents
+  async identity(info: { did: string; ident?: string }) {
+    const { did, ident = randomStr(8, 'base32') } = info
     const seq = Date.now()
     await this.db.executeWithRetry(
       this.db.db
         .updateTable('revision')
-        .set({ seq, seqIdentity: seq })
+        .set({ seq, ident })
+        .where('did', '=', did),
+    )
+    this.notify.update()
+  }
+
+  async status(info: { did: string; status: string | null }) {
+    const { did, status } = info
+    const seq = Date.now()
+    await this.db.executeWithRetry(
+      this.db.db
+        .updateTable('revision')
+        .set({ seq, status })
         .where('did', '=', did),
     )
     this.notify.update()

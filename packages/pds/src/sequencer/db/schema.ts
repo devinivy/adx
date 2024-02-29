@@ -24,7 +24,8 @@ export interface Revision {
   did: string
   rev: string
   seq: number
-  seqIdentity: number
+  ident: string | null
+  status: string | null
 }
 
 export type SequencerDbSchema = {
