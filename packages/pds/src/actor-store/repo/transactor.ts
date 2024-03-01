@@ -155,7 +155,7 @@ export class RepoTransactor extends RepoReader {
             this.now,
           )
         } else if (write.action === WriteOpAction.Delete) {
-          await this.record.deleteRecord(write.uri)
+          await this.record.deleteRecord(write.uri, rev)
         }
       }),
     )

@@ -1,11 +1,12 @@
 import { CID } from 'multiformats/cid'
 import { AtUri } from '@atproto/syntax'
 import { BlobStore, WriteOpAction } from '@atproto/repo'
+import { RepoRecord } from '@atproto/lexicon'
+import { StatusAttr } from '../../lexicon/types/com/atproto/admin/defs'
 import { dbLogger as log } from '../../logger'
 import { ActorDb, Backlink } from '../db'
+import { excluded } from '../../db'
 import { RecordReader, getBacklinks } from './reader'
-import { StatusAttr } from '../../lexicon/types/com/atproto/admin/defs'
-import { RepoRecord } from '@atproto/lexicon'
 
 export class RecordTransactor extends RecordReader {
   constructor(public db: ActorDb, public blobstore: BlobStore) {
@@ -50,6 +51,21 @@ export class RecordTransactor extends RecordReader {
       )
       .execute()
 
+    await this.db.db
+      .insertInto('record_sync')
+      .values({
+        path: `${row.collection}/${row.rkey}`,
+        rev: repoRev,
+        cid: row.cid,
+      })
+      .onConflict((oc) =>
+        oc.column('path').doUpdateSet({
+          rev: excluded(this.db.db, 'rev'),
+          cid: excluded(this.db.db, 'cid'),
+        }),
+      )
+      .execute()
+
     if (record !== null) {
       // Maintain backlinks
       const backlinks = getBacklinks(uri, record)
@@ -64,15 +80,24 @@ export class RecordTransactor extends RecordReader {
     log.info({ uri }, 'indexed record')
   }
 
-  async deleteRecord(uri: AtUri) {
+  async deleteRecord(uri: AtUri, rev: string) {
     log.debug({ uri }, 'deleting indexed record')
     const deleteQuery = this.db.db
       .deleteFrom('record')
       .where('uri', '=', uri.toString())
+    const deleteSyncQuery = this.db.db
+      .updateTable('record_sync')
+      .set({ rev, cid: null })
+      .where('path', '=', `${uri.collection}/${uri.rkey}`)
     const backlinkQuery = this.db.db
       .deleteFrom('backlink')
       .where('uri', '=', uri.toString())
-    await Promise.all([deleteQuery.execute(), backlinkQuery.execute()])
+
+    await Promise.all([
+      deleteQuery.execute(),
+      deleteSyncQuery.execute(),
+      backlinkQuery.execute(),
+    ])
 
     log.info({ uri }, 'deleted indexed record')
   }

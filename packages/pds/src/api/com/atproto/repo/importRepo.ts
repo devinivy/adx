@@ -67,7 +67,7 @@ const importRepo = async (
         async () => {
           const uri = AtUri.make(did, write.collection, write.rkey)
           if (write.action === WriteOpAction.Delete) {
-            await actorStore.record.deleteRecord(uri)
+            await actorStore.record.deleteRecord(uri, rev)
           } else {
             let parsedRecord: RepoRecord
             try {
