@@ -4919,7 +4919,7 @@ export const schemaDict = {
           },
         },
         output: {
-          encoding: 'application/json',
+          encoding: 'application/json-lines',
           schema: {
             type: 'object',
             required: ['path', 'cid', 'block'],

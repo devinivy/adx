@@ -29,7 +29,7 @@ export interface OutputSchema {
 export type HandlerInput = undefined
 
 export interface HandlerSuccess {
-  encoding: 'application/json'
+  encoding: 'application/json-lines'
   body: OutputSchema
   headers?: { [key: string]: string }
 }
