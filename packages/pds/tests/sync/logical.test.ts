@@ -1,17 +1,19 @@
 import assert from 'node:assert'
 import { TestNetworkNoAppView, SeedClient } from '@atproto/dev-env'
+import { check, cidForCbor, wait } from '@atproto/common'
+import { DisconnectError, Subscription } from '@atproto/xrpc-server'
 import { randomStr } from '@atproto/crypto'
 import * as repo from '@atproto/repo'
 import { MemoryBlockstore, MST } from '@atproto/repo'
 import { AtUri } from '@atproto/syntax'
 import { jsonStringToLex } from '@atproto/lexicon'
 import { OutputSchema } from '../../src/lexicon/types/com/atproto/sync/syncRepo'
-import { check, cidForCbor, createDeferrable, wait } from '@atproto/common'
+import { OutputSchema as RevisionMessage } from '../../src/lexicon/types/com/atproto/sync/subscribeRevisions'
+import { ids, lexicons } from '../../src/lexicon/lexicons'
 
 describe('logical repo sync', () => {
   let network: TestNetworkNoAppView
   let sc: SeedClient
-  let did: string
 
   beforeAll(async () => {
     network = await TestNetworkNoAppView.create({
@@ -98,6 +100,52 @@ describe('logical repo sync', () => {
       }
     })()
     await Promise.all([createConcurrent, syncConcurrent])
+  })
+
+  describe.only('multi-repo sync', () => {
+    it('syncs multiple repos', async () => {
+      const ac = new AbortController()
+      setTimeout(() => ac.abort(new DisconnectError()), 10000)
+      let userId = 0
+      await sc.createAccount(`user${userId}`, {
+        email: `user${userId}@test.com`,
+        handle: `user${userId}.test`,
+        password: `${userId}-pass`,
+      })
+      const revisionSub = new Subscription({
+        service: sc.agent.service.origin.replace('http://', 'ws://'),
+        method: ids.ComAtprotoSyncSubscribeRevisions,
+        signal: ac.signal,
+        getParams: async () => {
+          return { cursor: 0 }
+        },
+        onReconnectError: (err) => {
+          throw err
+        },
+        validate: (value) => {
+          return lexicons.assertValidXrpcMessage<RevisionMessage>(
+            ids.ComAtprotoSyncSubscribeRevisions,
+            value,
+          )
+        },
+      })
+      const items: RevisionMessage[] = []
+      for await (const item of revisionSub) {
+        items.push(item)
+        if (userId < 4) {
+          userId++
+          await sc.createAccount(`user${userId}`, {
+            email: `user${userId}@test.com`,
+            handle: `user${userId}.test`,
+            password: `${userId}-pass`,
+          })
+        } else {
+          break
+        }
+      }
+      console.log(items)
+      expect(items).toHaveLength(5)
+    })
   })
 })
 

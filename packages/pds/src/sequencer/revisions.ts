@@ -1,8 +1,8 @@
+import { sql } from 'kysely'
+import { randomStr } from '@atproto/crypto'
 import { Notify } from './notify'
 import { SequencerDb, getDb } from './db'
 import { excluded } from '../db'
-import { cidForCbor } from '@atproto/common'
-import { randomStr } from '@atproto/crypto'
 
 export class Revisions {
   db: SequencerDb
@@ -33,6 +33,7 @@ export class Revisions {
   }
 
   async getPage(params?: { seq: number; did?: string }) {
+    const { ref } = this.db.db.dynamic
     let qb = this.db.db
       .selectFrom('revision')
       .selectAll()
@@ -41,7 +42,9 @@ export class Revisions {
       .limit(250)
     if (params) {
       if (params.did) {
-        qb = qb.where('seq', '>', params.seq).where('did', '>', params.did)
+        const cols = sql`(${ref('seq')}, ${ref('did')})`
+        const vals = sql`(${params.seq}, ${params.did})`
+        qb = qb.where(cols, '>', vals)
       } else {
         qb = qb.where('seq', '>=', params.seq)
       }
