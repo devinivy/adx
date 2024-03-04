@@ -68,6 +68,7 @@ export const readEnv = (): ServerEnvironment => {
     // subscription
     maxSubscriptionBuffer: envInt('PDS_MAX_SUBSCRIPTION_BUFFER'),
     repoBackfillLimitMs: envInt('PDS_REPO_BACKFILL_LIMIT_MS'),
+    logicalSyncBatchSize: envInt('PDS_LOGICAL_SYNC_BATCH_SIZE'),
 
     // appview
     bskyAppViewUrl: envStr('PDS_BSKY_APP_VIEW_URL'),
@@ -174,6 +175,7 @@ export type ServerEnvironment = {
   // subscription
   maxSubscriptionBuffer?: number
   repoBackfillLimitMs?: number
+  logicalSyncBatchSize?: number
 
   // appview
   bskyAppViewUrl?: string

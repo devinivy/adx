@@ -169,6 +169,7 @@ export const envToCfg = (env: ServerEnvironment): ServerConfig => {
   const subscriptionCfg: ServerConfig['subscription'] = {
     maxBuffer: env.maxSubscriptionBuffer ?? 500,
     repoBackfillLimitMs: env.repoBackfillLimitMs ?? DAY,
+    logicalSyncBatchSize: env.logicalSyncBatchSize,
   }
 
   let bskyAppViewCfg: ServerConfig['bskyAppView'] = null
@@ -352,6 +353,7 @@ export type EmailConfig = {
 export type SubscriptionConfig = {
   maxBuffer: number
   repoBackfillLimitMs: number
+  logicalSyncBatchSize?: number
 }
 
 export type RedisScratchConfig = {

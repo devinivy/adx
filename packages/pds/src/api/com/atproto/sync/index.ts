@@ -7,6 +7,7 @@ import getRecord from './getRecord'
 import getRepo from './getRepo'
 import subscribeRepos from './subscribeRepos'
 import subscribeRevisions from './subscribeRevisions'
+import syncRepo from './syncRepo'
 import listBlobs from './listBlobs'
 import listRepos from './listRepos'
 import getCheckout from './deprecated/getCheckout'
@@ -20,6 +21,7 @@ export default function (server: Server, ctx: AppContext) {
   getRepo(server, ctx)
   subscribeRepos(server, ctx)
   subscribeRevisions(server, ctx)
+  syncRepo(server, ctx)
   listBlobs(server, ctx)
   listRepos(server, ctx)
   getCheckout(server, ctx)
