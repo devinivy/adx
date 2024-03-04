@@ -132,18 +132,14 @@ describe('logical repo sync', () => {
       const items: RevisionMessage[] = []
       for await (const item of revisionSub) {
         items.push(item)
-        if (userId < 4) {
-          userId++
-          await sc.createAccount(`user${userId}`, {
-            email: `user${userId}@test.com`,
-            handle: `user${userId}.test`,
-            password: `${userId}-pass`,
-          })
-        } else {
-          break
-        }
+        if (userId >= 4) break
+        userId++
+        await sc.createAccount(`user${userId}`, {
+          email: `user${userId}@test.com`,
+          handle: `user${userId}.test`,
+          password: `${userId}-pass`,
+        })
       }
-      console.log(items)
       expect(items).toHaveLength(5)
     })
   })
