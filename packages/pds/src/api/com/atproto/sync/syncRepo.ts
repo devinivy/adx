@@ -4,7 +4,7 @@ import { OutgoingMessage } from 'node:http'
 import { sql } from 'kysely'
 import { InvalidRequestError } from '@atproto/xrpc-server'
 import { CID } from 'multiformats/cid'
-import { cborDecode, ipldToJson, wait } from '@atproto/common'
+import { cborDecode, ipldToJson } from '@atproto/common'
 import { OutputSchema } from '../../../../lexicon/types/com/atproto/sync/syncRepo'
 import { Server } from '../../../../lexicon'
 import AppContext from '../../../../context'
@@ -62,7 +62,6 @@ export const getRecordStream = async function* (
       for (const row of records) {
         yield rowToOutput(row, collection)
       }
-      await wait(10) // @TODO
       const last = records.at(-1)
       if (!last) {
         signal.throwIfAborted()

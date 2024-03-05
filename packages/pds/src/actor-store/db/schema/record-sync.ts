@@ -1,4 +1,3 @@
-// @NOTE also used by app-view (moderation)
 export interface RecordSync {
   path: string
   rev: string
