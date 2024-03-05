@@ -29,89 +29,17 @@ describe('logical repo sync', () => {
     await network.close()
   })
 
-  it('syncs records across revisions', async () => {
-    let since: string | undefined
-    let mst = await MST.create(new MemoryBlockstore())
-    // create posts, sync and check
-    const { did } = await sc.createAccount('alice', {
-      email: 'alice@test.com',
-      handle: 'alice.test',
-      password: 'alice-pass',
-    })
-    for (let i = 0; i < 10; i++) {
-      await createPost(sc, did)
-    }
-    let items = await getRepoSync(sc, { did })
-    mst = await applySync(mst, items)
-    await assertMatchingRoot(mst, items)
-    // delete and create additional posts, sync and check
-    for (let i = 0; i < 3; i++) {
-      await deletePost(sc, sc.posts[did][i].ref.uri)
-    }
-    for (let i = 0; i < 2; i++) {
-      await createPost(sc, did)
-    }
-    since = getSyncRoot(items).block.rev
-    items = await getRepoSync(sc, { did, since })
-    mst = await applySync(mst, items)
-    await assertMatchingRoot(mst, items)
-    // no-op, sync and check
-    since = getSyncRoot(items).block.rev
-    items = await getRepoSync(sc, { did, since })
-    mst = await applySync(mst, items)
-    await assertMatchingRoot(mst, items)
-    // additional check on record count in the mst
-    let total = 0
-    for await (const entry of mst.walk()) {
-      if (entry.isLeaf()) total++
-    }
-    expect(total).toBe(10 - 3 + 2)
-  })
-
-  it('syncs with concurrent updates', async () => {
-    // create a decent amount of backfill
-    const { did } = await sc.createAccount('bob', {
-      email: 'bob@test.com',
-      handle: 'bob.test',
-      password: 'bob-pass',
-    })
-    for (let i = 0; i < 100; i++) {
-      await createPost(sc, did)
-    }
-    // continuous writing and syncing
-    // @NOTE not easy to reliably trigger the case of receiving a trailing root, may not occur here.
-    const ac = new AbortController()
-    const createConcurrent = (async () => {
-      for (let i = 0; i < 500; i++) {
-        await createPost(sc, did)
-      }
-      ac.abort()
-    })()
-    const syncConcurrent = (async () => {
-      let since: string | undefined = undefined
-      let mst = await MST.create(new MemoryBlockstore())
-      let items: OutputSchema[]
-      while (!ac.signal.aborted) {
-        items = await getRepoSync(sc, { did, since })
-        since = getSyncRoot(items).block.rev
-        mst = await applySync(mst, items)
-        await assertMatchingRoot(mst, items)
-        await wait(5)
-      }
-    })()
-    await Promise.all([createConcurrent, syncConcurrent])
-  })
-
-  describe.only('multi-repo sync', () => {
-    it('syncs multiple repos', async () => {
-      const ac = new AbortController()
-      setTimeout(() => ac.abort(new DisconnectError()), 10000)
+  describe('revision sync', () => {
+    it('syncs repo revisions', async () => {
       let userId = 0
-      await sc.createAccount(`user${userId}`, {
-        email: `user${userId}@test.com`,
-        handle: `user${userId}.test`,
-        password: `${userId}-pass`,
-      })
+      const createUser = (id: number) => {
+        return sc.createAccount(`user${id}`, {
+          email: `user${id}@test.com`,
+          handle: `user${id}.test`,
+          password: `${id}-pass`,
+        })
+      }
+      const ac = new AbortController()
       const revisionSub = new Subscription({
         service: sc.agent.service.origin.replace('http://', 'ws://'),
         method: ids.ComAtprotoSyncSubscribeRevisions,
@@ -129,18 +57,96 @@ describe('logical repo sync', () => {
           )
         },
       })
+      let timer: NodeJS.Timeout
+      const resetTimer = () => {
+        clearTimeout(timer)
+        timer = setTimeout(() => ac.abort(new DisconnectError()), 250)
+      }
+      await createUser(userId++)
+      resetTimer()
       const items: RevisionMessage[] = []
       for await (const item of revisionSub) {
+        resetTimer()
         items.push(item)
         if (userId >= 4) break
-        userId++
-        await sc.createAccount(`user${userId}`, {
-          email: `user${userId}@test.com`,
-          handle: `user${userId}.test`,
-          password: `${userId}-pass`,
-        })
+        await createUser(userId++)
       }
-      expect(items).toHaveLength(5)
+      expect(items).toHaveLength(4)
+    })
+  })
+
+  describe('repo sync', () => {
+    it('syncs records across revisions', async () => {
+      let since: string | undefined
+      let mst = await MST.create(new MemoryBlockstore())
+      // create posts, sync and check
+      const { did } = await sc.createAccount('alice', {
+        email: 'alice@test.com',
+        handle: 'alice.test',
+        password: 'alice-pass',
+      })
+      for (let i = 0; i < 10; i++) {
+        await createPost(sc, did)
+      }
+      let items = await getRepoSync(sc, { did })
+      mst = await applySync(mst, items)
+      await assertMatchingRoot(mst, items)
+      // delete and create additional posts, sync and check
+      for (let i = 0; i < 3; i++) {
+        await deletePost(sc, sc.posts[did][i].ref.uri)
+      }
+      for (let i = 0; i < 2; i++) {
+        await createPost(sc, did)
+      }
+      since = getSyncRoot(items).block.rev
+      items = await getRepoSync(sc, { did, since })
+      mst = await applySync(mst, items)
+      await assertMatchingRoot(mst, items)
+      // no-op, sync and check
+      since = getSyncRoot(items).block.rev
+      items = await getRepoSync(sc, { did, since })
+      mst = await applySync(mst, items)
+      await assertMatchingRoot(mst, items)
+      // additional check on record count in the mst
+      let total = 0
+      for await (const entry of mst.walk()) {
+        if (entry.isLeaf()) total++
+      }
+      expect(total).toBe(10 - 3 + 2)
+    })
+
+    it('syncs with concurrent updates', async () => {
+      // create a decent amount of backfill
+      const { did } = await sc.createAccount('bob', {
+        email: 'bob@test.com',
+        handle: 'bob.test',
+        password: 'bob-pass',
+      })
+      for (let i = 0; i < 100; i++) {
+        await createPost(sc, did)
+      }
+      // continuous writing and syncing
+      // @NOTE not easy to reliably trigger the case of receiving a trailing root, may not occur here.
+      const ac = new AbortController()
+      const createConcurrent = (async () => {
+        for (let i = 0; i < 500; i++) {
+          await createPost(sc, did)
+        }
+        ac.abort()
+      })()
+      const syncConcurrent = (async () => {
+        let since: string | undefined = undefined
+        let mst = await MST.create(new MemoryBlockstore())
+        let items: OutputSchema[]
+        while (!ac.signal.aborted) {
+          items = await getRepoSync(sc, { did, since })
+          since = getSyncRoot(items).block.rev
+          mst = await applySync(mst, items)
+          await assertMatchingRoot(mst, items)
+          await wait(5)
+        }
+      })()
+      await Promise.all([createConcurrent, syncConcurrent])
     })
   })
 })
@@ -188,12 +194,8 @@ const getRepoSync = async (
   const url = new URL(sc.agent.service.origin)
   url.pathname = '/xrpc/com.atproto.sync.syncRepo'
   url.searchParams.set('did', did)
-  if (since) {
-    url.searchParams.set('since', since)
-  }
-  if (collection) {
-    url.searchParams.set('collection', collection)
-  }
+  if (since) url.searchParams.set('since', since)
+  if (collection) url.searchParams.set('collection', collection)
   const res = await fetch(url)
   const output = await res.text()
   return output.split('\n').flatMap((item) => {
